@@ -9,14 +9,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.workday.techtest.builder.ExecutionStatus;
 import com.workday.techtest.builder.JobExecutionResult;
 import com.workday.techtest.builder.ReportBuilder;
 
 public class ReportingJobRunner extends AbstractReportingJobRunner {
-	private final ExecutorService executorService = Executors.newWorkStealingPool();
+	private int PARALLELISM=10;
+	private int MIN_ALLOCATION_TIME=30;
+	private final ExecutorService executorService = Executors.newWorkStealingPool(PARALLELISM);
 	private final ReportBuilder reportBuilder = new ReportBuilder();
+	private static final Logger LOGGER = Logger.getLogger(ReportingJobRunner.class.getName());
+	
 	@Override
 	public String version() {
 		return "536543A4-4077-4672-B501-3520A49549E6";
@@ -29,8 +35,9 @@ public class ReportingJobRunner extends AbstractReportingJobRunner {
 		try {
 			List<Future<Void>> futures = executorService.invokeAll(taskList);
 			executionResult = extractResult(futures, taskList);
-		} catch (InterruptedException e) {
-			
+		} catch (InterruptedException ex
+				) {
+			LOGGER.log(Level.SEVERE, "Exception occur", ex);
 		}
 		return reportBuilder.buildJobRunnerReport(jobCount, executionResult);
 	}
@@ -57,8 +64,8 @@ public class ReportingJobRunner extends AbstractReportingJobRunner {
 				reportTask = taskList.get(i++);
 				timeElapsed = Duration.between(firstInstant, Instant.now()).toMillis();
 				
-				if(reportTask.task.duration()>timeElapsed) {
-					future.get(reportTask.task.duration()-timeElapsed+10, TimeUnit.MILLISECONDS);
+				if((reportTask.task.duration()+MIN_ALLOCATION_TIME)>timeElapsed) {
+					future.get(reportTask.task.duration()-timeElapsed+MIN_ALLOCATION_TIME, TimeUnit.MILLISECONDS);
 					executionStatus=ExecutionStatus.SUCCESS;
 				} else if(future.isDone()){
 					future.get();
@@ -68,6 +75,7 @@ public class ReportingJobRunner extends AbstractReportingJobRunner {
 					future.cancel(true);
 				}
 			}catch (Exception ex) {
+				executionStatus=ExecutionStatus.FAILED;
 				future.cancel(true);
 			} finally {
 				executionResult.add(new JobExecutionResult(reportTask.task, executionStatus));
@@ -80,6 +88,7 @@ public class ReportingJobRunner extends AbstractReportingJobRunner {
 	
 	private class ReportingTask implements Callable<Void> {
 		private Job task;
+		private final Logger LOGGER = Logger.getLogger(ReportingTask.class.getName());
 		
 		public ReportingTask(Job task) {
 			this.task = task;
@@ -87,6 +96,7 @@ public class ReportingJobRunner extends AbstractReportingJobRunner {
 
 		@Override
 		public Void call() throws Exception {
+			LOGGER.info("Running job" + task.customerId() + "  " + task.uniqueId());
 			task.execute();
 			
 			return null;
