@@ -45,7 +45,7 @@ public class ReportingJobRecursiveTask extends RecursiveTask<List<JobExecutionRe
 	
 	private List<JobExecutionResult> executeTasks() {
 		List<CompletableFuture<Void>> futureList = new ArrayList<>((int)jobCount);
-		List<ReportRunnerTask> taskList = new ArrayList<>((int)jobCount);;
+		List<ReportRunnerTask> taskList = new ArrayList<>((int)jobCount);
 		
 		CompletableFuture<Void> future;
 		ReportRunnerTask task;
@@ -76,14 +76,13 @@ public class ReportingJobRecursiveTask extends RecursiveTask<List<JobExecutionRe
 				job = reportTask.getJob();
 				executionStatus=ExecutionStatus.FAILED;
 				
-				if(job != null && (job.duration()+MIN_ALLOCATION_TIME)>timeElapsed) {
+				if(future.isCompletedExceptionally()) {
+					executionStatus=ExecutionStatus.FAILED;
+				} else if(future.isDone()) {
+					executionStatus=ExecutionStatus.SUCCESS;
+				} else if (job != null && (job.duration()+MIN_ALLOCATION_TIME)>timeElapsed) {
 					future.get(job.duration()-timeElapsed+MIN_ALLOCATION_TIME, TimeUnit.MILLISECONDS);
-					if(future.isCompletedExceptionally())
-						executionStatus=ExecutionStatus.FAILED;
-					else
-						executionStatus=ExecutionStatus.SUCCESS;
-				} else if(future.isDone()){
-					future.get();
+					
 					executionStatus=ExecutionStatus.SUCCESS;
 				} else {
 					while(!reportTask.hasExecutionStarted()) {}
@@ -92,10 +91,11 @@ public class ReportingJobRecursiveTask extends RecursiveTask<List<JobExecutionRe
 					future.get(waitingTime, TimeUnit.MILLISECONDS);
 					executionStatus=ExecutionStatus.SUCCESS;
 				}
+				
 			}catch (Exception ex) {
 				executionStatus=ExecutionStatus.FAILED;
-				future.completeExceptionally(new RuntimeException());
 				future.cancel(true);
+				future.completeExceptionally(new RuntimeException());
 			} finally {
 				job = reportTask.getJob();
 				if(job !=null)

@@ -2,7 +2,7 @@ package com.workday.techtest;
 
 public class ReportRunnerTask implements Runnable{
 	private JobQueue jobQueue;
-	private Job job=null;
+	private Job job;
 	private boolean executionStarted;
 	
 	public ReportRunnerTask(JobQueue jobQueue) {

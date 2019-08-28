@@ -2,7 +2,9 @@ package com.workday.techtest;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -11,6 +13,7 @@ import com.workday.techtest.JobQueue;
 import com.workday.techtest.Report;
 import com.workday.techtest.ReportingJobRunner;
 import com.workday.techtest.builder.ExecutionStatus;
+import com.workday.techtest.builder.JobExecutionResult;
 
 public class ReportingJobRunnerTest {
 	
@@ -35,9 +38,17 @@ public class ReportingJobRunnerTest {
 		Report report = reportingJobRunner.reportingRunner(queue, 4);
 		assertEquals(4, report.getTotalJobsInRequest());
 		assertEquals(3, report.getTotalJobsExecuted());
-		assertEquals(ExecutionStatus.FAILED.name(), report.getExecutionResult().get(2).getExecutionStatus());
-		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(1).getExecutionStatus());
-		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(0).getExecutionStatus());
+		
+		List<JobExecutionResult> failedJobs = report.getExecutionResult().stream()
+			.filter(e->e.getExecutionStatus().equals(ExecutionStatus.FAILED.name()))
+			.collect(Collectors.toList());
+		
+		List<JobExecutionResult> successJobs = report.getExecutionResult().stream()
+				.filter(e->e.getExecutionStatus().equals(ExecutionStatus.SUCCESS.name()))
+				.collect(Collectors.toList());
+		
+		assertEquals(1, failedJobs.size());
+		assertEquals(2, successJobs.size());
 	}
 	
 	@Test
@@ -59,9 +70,18 @@ public class ReportingJobRunnerTest {
 		Report report = reportingJobRunner.reportingRunner(queue, 3);
 		assertEquals(3, report.getTotalJobsInRequest());
 		assertEquals(3, report.getTotalJobsExecuted());
-		assertEquals(ExecutionStatus.FAILED.name(), report.getExecutionResult().get(2).getExecutionStatus());
-		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(1).getExecutionStatus());
-		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(0).getExecutionStatus());
+		
+		
+		List<JobExecutionResult> failedJobs = report.getExecutionResult().stream()
+				.filter(e->e.getExecutionStatus().equals(ExecutionStatus.FAILED.name()))
+				.collect(Collectors.toList());
+			
+			List<JobExecutionResult> successJobs = report.getExecutionResult().stream()
+					.filter(e->e.getExecutionStatus().equals(ExecutionStatus.SUCCESS.name()))
+					.collect(Collectors.toList());
+			
+			assertEquals(1, failedJobs.size());
+			assertEquals(2, successJobs.size());
 	}
 	
 	@Test
