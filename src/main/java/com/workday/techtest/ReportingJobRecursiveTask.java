@@ -78,12 +78,15 @@ public class ReportingJobRecursiveTask extends RecursiveTask<List<JobExecutionRe
 				
 				if(job != null && (job.duration()+MIN_ALLOCATION_TIME)>timeElapsed) {
 					future.get(job.duration()-timeElapsed+MIN_ALLOCATION_TIME, TimeUnit.MILLISECONDS);
-					executionStatus=ExecutionStatus.SUCCESS;
+					if(future.isCompletedExceptionally())
+						executionStatus=ExecutionStatus.FAILED;
+					else
+						executionStatus=ExecutionStatus.SUCCESS;
 				} else if(future.isDone()){
 					future.get();
 					executionStatus=ExecutionStatus.SUCCESS;
 				} else {
-					while(!reportTask.executionStarted) {}
+					while(!reportTask.hasExecutionStarted()) {}
 					job = reportTask.getJob();
 					int waitingTime = (job==null) ? MIN_ALLOCATION_TIME : MIN_ALLOCATION_TIME+job.duration();
 					future.get(waitingTime, TimeUnit.MILLISECONDS);
@@ -94,6 +97,7 @@ public class ReportingJobRecursiveTask extends RecursiveTask<List<JobExecutionRe
 				future.completeExceptionally(new RuntimeException());
 				future.cancel(true);
 			} finally {
+				job = reportTask.getJob();
 				if(job !=null)
 					executionResult.add(new JobExecutionResult(job, executionStatus));
 			}
@@ -109,30 +113,4 @@ public class ReportingJobRecursiveTask extends RecursiveTask<List<JobExecutionRe
         return new ReportingJobRecursiveTask(jobQueue, mid);
     }
 	
-	private class ReportRunnerTask implements Runnable{
-		private JobQueue jobQueue;
-		private Job job=null;
-		private boolean executionStarted;
-		
-		public ReportRunnerTask(JobQueue jobQueue) {
-			this.jobQueue = jobQueue;
-		}
-		
-		public Job getJob() {
-			return job;
-		}
-
-		public boolean hasExecutionStarted() {
-			return executionStarted;
-		}
-
-		@Override
-		public void run() {
-			executionStarted=true;
-			job = jobQueue.pop();
-			if(job != null)
-				job.execute();
-		}
-	}
-
 }

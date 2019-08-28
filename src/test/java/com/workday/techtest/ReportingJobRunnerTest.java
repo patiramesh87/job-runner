@@ -6,6 +6,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import org.junit.Test;
 
+import com.workday.techtest.Job;
+import com.workday.techtest.JobQueue;
+import com.workday.techtest.Report;
+import com.workday.techtest.ReportingJobRunner;
 import com.workday.techtest.builder.ExecutionStatus;
 
 public class ReportingJobRunnerTest {
@@ -58,6 +62,16 @@ public class ReportingJobRunnerTest {
 		assertEquals(ExecutionStatus.FAILED.name(), report.getExecutionResult().get(2).getExecutionStatus());
 		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(1).getExecutionStatus());
 		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(0).getExecutionStatus());
+	}
+	
+	@Test
+	public void testRunnerWhenNoJobInQueue() {
+		TestjobQueue queue = new TestjobQueue();
+		
+		Report report = reportingJobRunner.reportingRunner(queue, 4);
+		assertEquals(4, report.getTotalJobsInRequest());
+		assertEquals(0, report.getTotalJobsExecuted());
+		
 	}
 	
 	class TestjobQueue implements JobQueue{
