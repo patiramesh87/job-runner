@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import com.workday.techtest.builder.JobExecutionResult;
 import com.workday.techtest.builder.ReportBuilder;
+import com.workday.techtest.exception.JobExecutionException;
 
 public class ReportingJobRunner extends AbstractReportingJobRunner {
 	private int PARALLELISM=15;

@@ -1,4 +1,4 @@
-package com.workday.techtest;
+package com.workday.techtest.exception;
 
 public class JobExecutionException extends RuntimeException{
 
