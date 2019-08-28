@@ -13,13 +13,13 @@ public class ReportingJobRunnerTest {
 	private ReportingJobRunner reportingJobRunner = new ReportingJobRunner();
 	
 	@Test
-	public void testRunnerDuringSuccessExceptionDuringExecute() {
+	public void testRunnerDuringSuccessExceptionAndBlockingDuringExecute() {
 		TestjobQueue queue = new TestjobQueue();
 		try {
 			TestJob job;
 			queue.enque(new TestJob(9, 20));
 			
-			job = new TestJob(5, 15);
+			job = new TestJob(5, 200);
 			job.setCanSleep(true);
 			queue.enque(job);
 			
@@ -28,23 +28,22 @@ public class ReportingJobRunnerTest {
 			queue.enque(job);
 			
 		} catch (InterruptedException e) {}
-		Report report = reportingJobRunner.reportingRunner(queue, 3);
-		assertEquals(3, report.getTotalJobsInRequest());
+		Report report = reportingJobRunner.reportingRunner(queue, 4);
+		assertEquals(4, report.getTotalJobsInRequest());
 		assertEquals(3, report.getTotalJobsExecuted());
 		assertEquals(ExecutionStatus.FAILED.name(), report.getExecutionResult().get(2).getExecutionStatus());
 		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(1).getExecutionStatus());
 		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(0).getExecutionStatus());
 	}
 	
-	
 	@Test
-	public void testRunnerDuringSuccessAndBlockingDuringExecute() {
+	public void testRunnerDuringSuccessAndSleepDuringExecute() {
 		TestjobQueue queue = new TestjobQueue();
 		try {
 			TestJob job;
-			queue.enque(new TestJob(9, 20));
+			queue.enque(new TestJob(9, 50));
 			
-			job = new TestJob(5, 15);
+			job = new TestJob(5, 200);
 			job.setCanSleep(true);
 			queue.enque(job);
 			
@@ -60,7 +59,6 @@ public class ReportingJobRunnerTest {
 		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(1).getExecutionStatus());
 		assertEquals(ExecutionStatus.SUCCESS.name(), report.getExecutionResult().get(0).getExecutionStatus());
 	}
-	
 	
 	class TestjobQueue implements JobQueue{
 		private ArrayBlockingQueue<Job> queue = new ArrayBlockingQueue<>(4);
@@ -126,7 +124,7 @@ public class ReportingJobRunnerTest {
 			
 			if(canSleep) {
 				try {
-					Thread.sleep(duration-5);
+					Thread.sleep(10);
 				} catch (InterruptedException e) {
 					
 				}
@@ -138,7 +136,7 @@ public class ReportingJobRunnerTest {
 				}
 			}
 			for(int i=0;i<number*number;i++);
-			System.out.println("Finitely executing");
+				System.out.println("Finitely executing");
 		}
 		
 	}
